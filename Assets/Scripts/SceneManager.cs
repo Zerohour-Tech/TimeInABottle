@@ -11,7 +11,7 @@ public class SceneManager : MonoBehaviour
     List<String> messages = new List<String>();
     int current_message = 0;
     float display_duration = 3.141592f;
-    public float typing_frequency = 0.2f; 
+    float typing_frequency = 0.05f; 
     float fade_value = 0.1f;
     Color default_color; 
     // Start is called before the first frame update
