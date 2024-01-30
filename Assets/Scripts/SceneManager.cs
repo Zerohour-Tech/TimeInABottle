@@ -4,16 +4,22 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Networking;
 
 public class SceneManager : MonoBehaviour
 {
     public TextMeshProUGUI message;
-    List<String> messages = new List<String>();
+    List<string> messages = new List<String>();
     int current_message = 0;
     float display_duration = 3.141592f;
     float typing_frequency = 0.05f; 
     float fade_value = 0.1f;
-    Color default_color; 
+    Color default_color;
+    int refresh_frequency = 3; //seconds
+
+
+    string FIRESTORE_URL = "https://firestore.googleapis.com/v1beta1/projects/nostagain/databases/(default)/documents/timeinabottle";
+
     // Start is called before the first frame update
     void Start()
     {
@@ -23,7 +29,9 @@ public class SceneManager : MonoBehaviour
         messages.Add("The elephant was too heavy on my chest");
         messages.Add("Its not the past that was, but the past that could have been.");
         messages.Add("An exchange of nostalgia. Absorbing. Changing. \nRefracting.");
+        StartCoroutine(FetchFirestore());
         StartCoroutine(ChangeMessage());
+
 
     }
 
@@ -64,5 +72,70 @@ public class SceneManager : MonoBehaviour
         }
     }
 
+    IEnumerator FetchFirestore()
+    {
+        while (true)
+        {
+
+            UnityWebRequest storage = UnityWebRequest.Get(FIRESTORE_URL);
+            yield return storage.SendWebRequest();
+            if (storage.result != UnityWebRequest.Result.Success)
+            {
+                Debug.Log(storage.error);
+            }
+
+            JSONResponse response = JsonUtility.FromJson<JSONResponse>(storage.downloadHandler.text);
+            if (response.documents.Count != messages.Count)
+            {
+                messages = ParseMessages(response.documents);
+            }
+            yield return new WaitForSeconds(refresh_frequency);
+        }
+
+    }
+
+    List<string> ParseMessages(List<Entries> entries)
+    {
+        List<string> new_messages_array = new List<string>();
+
+        foreach(Entries entry in entries)
+        {
+            new_messages_array.Add(entry.fields.message.stringValue);
+        }
+
+        return new_messages_array;
+    }
 
 }
+
+[System.Serializable]
+public class Message
+{
+    public string stringValue;
+}
+
+[System.Serializable]
+public class Fields
+{
+    public Message message;
+}
+
+[System.Serializable]
+public class Entries
+{
+    public string name;
+    public Fields fields;
+    public string createTime;
+    public string updateTime;
+}
+
+[System.Serializable]
+public class JSONResponse
+{
+    public List<Entries> documents;
+}
+
+
+
+
+
