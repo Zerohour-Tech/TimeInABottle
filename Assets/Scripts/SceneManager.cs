@@ -85,10 +85,10 @@ public class SceneManager : MonoBehaviour
             }
 
             JSONResponse response = JsonUtility.FromJson<JSONResponse>(storage.downloadHandler.text);
-            if (response.documents.Count != messages.Count)
+            if (response.documents.Count != messages.Count || !IdenticalArray(response.documents))
             {
                 messages = ParseMessages(response.documents);
-            }
+            } 
             yield return new WaitForSeconds(refresh_frequency);
         }
 
@@ -104,6 +104,18 @@ public class SceneManager : MonoBehaviour
         }
 
         return new_messages_array;
+    }
+    bool IdenticalArray(List<Entries> entries)
+    {
+        //assumption: entries and messages arrays have the same length
+        for (int i = 0; i < entries.Count; i++)
+        {
+            if (entries[i].fields.message.stringValue != messages[i])
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
 }
